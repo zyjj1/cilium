@@ -46,6 +46,7 @@ type resourceInfo struct {
 	tunnelPeer        ipcachetypes.TunnelPeer
 	encryptKey        ipcachetypes.EncryptKey
 	requestedIdentity ipcachetypes.RequestedIdentity
+	k8sMeta           ipcachetypes.K8sMetadata
 }
 
 // IPMetadata is an empty interface intended to inform developers using the
@@ -80,6 +81,8 @@ func (m *resourceInfo) merge(info IPMetadata, src source.Source) {
 		m.encryptKey = info
 	case ipcachetypes.RequestedIdentity:
 		m.requestedIdentity = info
+	case ipcachetypes.K8sMetadata:
+		m.k8sMeta = info
 	default:
 		log.Errorf("BUG: Invalid IPMetadata passed to ipinfo.merge(): %+v", info)
 		return
@@ -100,6 +103,8 @@ func (m *resourceInfo) unmerge(info IPMetadata) {
 		m.encryptKey = ipcachetypes.EncryptKeyEmpty
 	case ipcachetypes.RequestedIdentity:
 		m.requestedIdentity = ipcachetypes.RequestedIdentity(identity.IdentityUnknown)
+	case ipcachetypes.K8sMetadata:
+		m.k8sMeta = ipcachetypes.K8sMetadata{}
 	default:
 		log.Errorf("BUG: Invalid IPMetadata passed to ipinfo.unmerge(): %+v", info)
 		return
@@ -120,6 +125,9 @@ func (m *resourceInfo) isValid() bool {
 		return true
 	}
 	if m.requestedIdentity.IsValid() {
+		return true
+	}
+	if m.k8sMeta.IsValid() {
 		return true
 	}
 	return false
@@ -203,6 +211,20 @@ func (s PrefixInfo) RequestedIdentity() ipcachetypes.RequestedIdentity {
 	return ipcachetypes.RequestedIdentity(identity.InvalidIdentity)
 }
 
+func (s PrefixInfo) K8sMetadata() ipcachetypes.K8sMetadata {
+	for _, rid := range s.sortedBySourceThenResourceID() {
+		if km := s[rid].k8sMeta; km.IsValid() {
+			return km
+		}
+	}
+	return ipcachetypes.K8sMetadata{}
+}
+
+func (s PrefixInfo) HasK8sMetadata() bool {
+	km := s.K8sMetadata()
+	return km.IsValid()
+}
+
 // identityOverride extracts the labels of the pre-determined identity from
 // the prefix info. If no override identity is present, this returns nil.
 // This pre-determined identity will overwrite any other identity which may
@@ -238,6 +260,8 @@ func (s PrefixInfo) identityOverride() (lbls labels.Labels, hasOverride bool) {
 
 func (s PrefixInfo) logConflicts(scopedLog *logrus.Entry) {
 	var (
+		source source.Source
+
 		override           labels.Labels
 		overrideResourceID ipcachetypes.ResourceID
 
@@ -249,6 +273,9 @@ func (s PrefixInfo) logConflicts(scopedLog *logrus.Entry) {
 
 		requestedID           ipcachetypes.RequestedIdentity
 		requestedIDResourceID ipcachetypes.ResourceID
+
+		k8sMeta           ipcachetypes.K8sMetadata
+		k8sMetaResourceID ipcachetypes.ResourceID
 	)
 
 	for _, resourceID := range s.sortedBySourceThenResourceID() {
@@ -324,5 +351,22 @@ func (s PrefixInfo) logConflicts(scopedLog *logrus.Entry) {
 				requestedIDResourceID = resourceID
 			}
 		}
+
+		if info.k8sMeta.IsValid() {
+			if k8sMeta.IsValid() && !info.k8sMeta.Equal(&k8sMeta) && info.source == source {
+				scopedLog.WithFields(logrus.Fields{
+					logfields.Key:                 k8sMeta.String(),
+					logfields.Resource:            k8sMetaResourceID,
+					logfields.ConflictingKey:      info.k8sMeta.String(),
+					logfields.ConflictingResource: resourceID,
+				}).Warning("Detected conflicting Kubernetes metadata index for prefix. " +
+					"This may cause connectivity issues for this address.")
+			} else {
+				k8sMeta = info.k8sMeta
+				k8sMetaResourceID = resourceID
+			}
+		}
+
+		source = info.source
 	}
 }
