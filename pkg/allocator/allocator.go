@@ -418,7 +418,7 @@ func (a *Allocator) WaitForInitialSync(ctx context.Context) error {
 	select {
 	case <-a.initialListDone:
 	case <-ctx.Done():
-		return fmt.Errorf("identity sync was cancelled: %s", ctx.Err())
+		return fmt.Errorf("identity sync was cancelled: %w", ctx.Err())
 	}
 
 	return nil

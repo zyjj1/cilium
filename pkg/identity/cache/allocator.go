@@ -284,7 +284,7 @@ func (m *CachingIdentityAllocator) WaitForInitialGlobalIdentities(ctx context.Co
 	select {
 	case <-m.globalIdentityAllocatorInitialized:
 	case <-ctx.Done():
-		return fmt.Errorf("initial global identity sync was cancelled: %s", ctx.Err())
+		return fmt.Errorf("initial global identity sync was cancelled: %w", ctx.Err())
 	}
 
 	return m.IdentityAllocator.WaitForInitialSync(ctx)
