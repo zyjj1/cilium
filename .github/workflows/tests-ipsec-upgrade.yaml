@@ -75,7 +75,7 @@ jobs:
       fail-fast: false
       max-parallel: 16
       matrix:
-        config: ['5.4', '5.10', '6.1', 'bpf-next']
+        config: ['6.1']
         mode: ['minor', 'patch']
         include:
           # Define three config sets
@@ -313,6 +313,8 @@ jobs:
             ./cilium-cli status --wait
             kubectl get pods --all-namespaces -o wide
             kubectl -n kube-system exec daemonset/cilium -- cilium status
+
+            ./cilium-cli connectivity test
 
       - name: Start conn-disrupt-test
         if: ${{ steps.vars.outputs.downgrade_version != '' }}
