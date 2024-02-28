@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	. "github.com/cilium/checkmate"
+	check "github.com/cilium/checkmate"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	k8stypes "k8s.io/apimachinery/pkg/types"
@@ -353,6 +354,11 @@ func (ds *PolicyTestSuite) TestL7WithIngressWildcard(c *C) {
 	// Assign an empty mutex so that checker.Equal does not complain about the
 	// difference of the internal time.Time from the lock_debug.go.
 	policy.selectorPolicy.L4Policy.mutex = lock.RWMutex{}
+	// policyMapState cannot be compared via DeepEqual
+	c.Assert(policy.policyMapState.Equals(expectedEndpointPolicy.policyMapState), checker.Equals, true,
+		check.Commentf("%s", policy.policyMapState.Diff(nil, expectedEndpointPolicy.policyMapState)))
+	policy.policyMapState = nil
+	expectedEndpointPolicy.policyMapState = nil
 	c.Assert(policy, checker.DeepEquals, &expectedEndpointPolicy)
 }
 
@@ -450,6 +456,11 @@ func (ds *PolicyTestSuite) TestL7WithLocalHostWildcardd(c *C) {
 	// Assign an empty mutex so that checker.Equal does not complain about the
 	// difference of the internal time.Time from the lock_debug.go.
 	policy.selectorPolicy.L4Policy.mutex = lock.RWMutex{}
+	// policyMapState cannot be compared via DeepEqual
+	c.Assert(policy.policyMapState.Equals(expectedEndpointPolicy.policyMapState), checker.Equals, true,
+		check.Commentf("%s", policy.policyMapState.Diff(nil, expectedEndpointPolicy.policyMapState)))
+	policy.policyMapState = nil
+	expectedEndpointPolicy.policyMapState = nil
 	c.Assert(policy, checker.DeepEquals, &expectedEndpointPolicy)
 }
 
@@ -544,6 +555,11 @@ func (ds *PolicyTestSuite) TestMapStateWithIngressWildcard(c *C) {
 	// Assign an empty mutex so that checker.Equal does not complain about the
 	// difference of the internal time.Time from the lock_debug.go.
 	policy.selectorPolicy.L4Policy.mutex = lock.RWMutex{}
+	// policyMapState cannot be compared via DeepEqual
+	c.Assert(policy.policyMapState.Equals(expectedEndpointPolicy.policyMapState), checker.Equals, true,
+		check.Commentf("%s", policy.policyMapState.Diff(nil, expectedEndpointPolicy.policyMapState)))
+	policy.policyMapState = nil
+	expectedEndpointPolicy.policyMapState = nil
 	c.Assert(policy, checker.Equals, &expectedEndpointPolicy)
 }
 
@@ -718,6 +734,11 @@ func (ds *PolicyTestSuite) TestMapStateWithIngress(c *C) {
 	// difference of the internal time.Time from the lock_debug.go.
 	policy.selectorPolicy.L4Policy.mutex = lock.RWMutex{}
 	policy.policyMapChanges.mutex = lock.Mutex{}
+	// policyMapState cannot be compared via DeepEqual
+	c.Assert(policy.policyMapState.Equals(expectedEndpointPolicy.policyMapState), checker.Equals, true,
+		check.Commentf("%s", policy.policyMapState.Diff(nil, expectedEndpointPolicy.policyMapState)))
+	policy.policyMapState = nil
+	expectedEndpointPolicy.policyMapState = nil
 	c.Assert(policy, checker.Equals, &expectedEndpointPolicy)
 }
 

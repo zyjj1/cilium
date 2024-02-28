@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	. "github.com/cilium/checkmate"
+	check "github.com/cilium/checkmate"
 
 	"github.com/cilium/cilium/pkg/checker"
 	"github.com/cilium/cilium/pkg/identity"
@@ -262,6 +263,11 @@ func (ds *PolicyTestSuite) TestL3WithLocalHostWildcardd(c *C) {
 	// Assign an empty mutex so that checker.Equal does not complain about the
 	// difference of the internal time.Time from the lock_debug.go.
 	policy.selectorPolicy.L4Policy.mutex = lock.RWMutex{}
+	// policyMapState cannot be compared via DeepEqual
+	c.Assert(policy.policyMapState.Equals(expectedEndpointPolicy.policyMapState), checker.Equals, true,
+		check.Commentf("%s", policy.policyMapState.Diff(nil, expectedEndpointPolicy.policyMapState)))
+	policy.policyMapState = nil
+	expectedEndpointPolicy.policyMapState = nil
 	c.Assert(policy, checker.DeepEquals, &expectedEndpointPolicy)
 }
 
@@ -358,6 +364,11 @@ func (ds *PolicyTestSuite) TestMapStateWithIngressDenyWildcard(c *C) {
 	// Assign an empty mutex so that checker.Equal does not complain about the
 	// difference of the internal time.Time from the lock_debug.go.
 	policy.selectorPolicy.L4Policy.mutex = lock.RWMutex{}
+	// policyMapState cannot be compared via DeepEqual
+	c.Assert(policy.policyMapState.Equals(expectedEndpointPolicy.policyMapState), checker.Equals, true,
+		check.Commentf("%s", policy.policyMapState.Diff(nil, expectedEndpointPolicy.policyMapState)))
+	policy.policyMapState = nil
+	expectedEndpointPolicy.policyMapState = nil
 	c.Assert(policy, checker.DeepEquals, &expectedEndpointPolicy)
 }
 
@@ -522,5 +533,10 @@ func (ds *PolicyTestSuite) TestMapStateWithIngressDeny(c *C) {
 	// difference of the internal time.Time from the lock_debug.go.
 	policy.selectorPolicy.L4Policy.mutex = lock.RWMutex{}
 	policy.policyMapChanges.mutex = lock.Mutex{}
+	// policyMapState cannot be compared via DeepEqual
+	c.Assert(policy.policyMapState.Equals(expectedEndpointPolicy.policyMapState), checker.Equals, true,
+		check.Commentf("%s", policy.policyMapState.Diff(nil, expectedEndpointPolicy.policyMapState)))
+	policy.policyMapState = nil
+	expectedEndpointPolicy.policyMapState = nil
 	c.Assert(policy, checker.DeepEquals, &expectedEndpointPolicy)
 }

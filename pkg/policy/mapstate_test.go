@@ -1176,16 +1176,14 @@ func (ds *PolicyTestSuite) TestMapState_denyPreferredInsertWithChanges(c *check.
 
 		ms.denyPreferredInsertWithChanges(tt.args.key, tt.args.entry, nil, denyRules, changes)
 		ms.validatePortProto(c)
-		c.Assert(ms.allows, checker.DeepEquals, tt.want.allows, check.Commentf("%s: MapState mismatch allows", tt.name))
-		c.Assert(ms.denies, checker.DeepEquals, tt.want.denies, check.Commentf("%s: MapState mismatch denies", tt.name))
+		c.Assert(ms.Equals(tt.want), checker.Equals, true, check.Commentf("%s: MapState mismatch:\n%s", tt.name, ms.Diff(nil, tt.want)))
 		c.Assert(changes.Adds, checker.DeepEquals, tt.wantAdds, check.Commentf("%s: Adds mismatch", tt.name))
 		c.Assert(changes.Deletes, checker.DeepEquals, tt.wantDeletes, check.Commentf("%s: Deletes mismatch", tt.name))
 		c.Assert(changes.Old, checker.DeepEquals, tt.wantOld, check.Commentf("%s: OldValues mismatch allows", tt.name))
 
 		// Revert changes and check that we get the original mapstate
 		ms.RevertChanges(changes)
-		c.Assert(ms.allows, checker.DeepEquals, tt.ms.allows, check.Commentf("%s: Revert mismatch allows", tt.name))
-		c.Assert(ms.denies, checker.DeepEquals, tt.ms.denies, check.Commentf("%s: Revert mismatch denies", tt.name))
+		c.Assert(ms.Equals(tt.ms), checker.Equals, true, check.Commentf("%s: Revert mismatch:\n%s", tt.name, ms.Diff(nil, tt.ms)))
 	}
 }
 
@@ -1603,7 +1601,7 @@ func (ds *PolicyTestSuite) TestMapState_AccumulateMapChangesDeny(c *check.C) {
 		}
 		adds, deletes := policyMaps.consumeMapChanges(DummyOwner{}, policyMapState, denyRules, nil)
 		policyMapState.validatePortProto(c)
-		c.Assert(policyMapState, checker.DeepEquals, tt.state, check.Commentf(tt.name+" (MapState)"))
+		c.Assert(policyMapState.Equals(tt.state), checker.Equals, true, check.Commentf(tt.name+" (MapState):\n%s", policyMapState.Diff(nil, tt.state)))
 		c.Assert(adds, checker.DeepEquals, tt.adds, check.Commentf(tt.name+" (adds)"))
 		c.Assert(deletes, checker.DeepEquals, tt.deletes, check.Commentf(tt.name+" (deletes)"))
 	}
@@ -1824,7 +1822,7 @@ func (ds *PolicyTestSuite) TestMapState_AccumulateMapChanges(c *check.C) {
 		}
 		adds, deletes := policyMaps.consumeMapChanges(DummyOwner{}, policyMapState, policyFeatures(0), nil)
 		policyMapState.validatePortProto(c)
-		c.Assert(policyMapState, checker.DeepEquals, tt.state, check.Commentf(tt.name+" (MapState)"))
+		c.Assert(policyMapState.Equals(tt.state), checker.Equals, true, check.Commentf(tt.name+" (MapState)"))
 		c.Assert(adds, checker.DeepEquals, tt.adds, check.Commentf(tt.name+" (adds)"))
 		c.Assert(deletes, checker.DeepEquals, tt.deletes, check.Commentf(tt.name+" (deletes)"))
 	}
@@ -2000,8 +1998,7 @@ func (ds *PolicyTestSuite) TestMapState_AddVisibilityKeys(c *check.C) {
 		}
 		tt.ms.AddVisibilityKeys(DummyOwner{}, tt.args.redirectPort, &tt.args.visMeta, changes)
 		tt.ms.validatePortProto(c)
-		c.Assert(tt.ms.allows, checker.DeepEquals, tt.want.allows, check.Commentf(tt.name))
-		c.Assert(tt.ms.denies, checker.DeepEquals, tt.want.denies, check.Commentf(tt.name))
+		c.Assert(tt.ms.Equals(tt.want), checker.Equals, true, check.Commentf("%s:\n%s", tt.name, tt.ms.Diff(nil, tt.want)))
 		// Find new and updated entries
 		wantAdds := make(Keys)
 		wantOld := make(map[Key]MapStateEntry)
@@ -2405,7 +2402,7 @@ func (ds *PolicyTestSuite) TestMapState_AccumulateMapChangesOnVisibilityKeys(c *
 			changes.Deletes[k] = struct{}{}
 		}
 		policyMapState.validatePortProto(c)
-		c.Assert(policyMapState, checker.DeepEquals, tt.state, check.Commentf(tt.name+" (MapState)"))
+		c.Assert(policyMapState.Equals(tt.state), checker.Equals, true, check.Commentf(tt.name+" (MapState):\n%s", policyMapState.Diff(nil, tt.state)))
 		c.Assert(changes.Adds, checker.DeepEquals, tt.adds, check.Commentf(tt.name+" (adds)"))
 		c.Assert(changes.Deletes, checker.DeepEquals, tt.deletes, check.Commentf(tt.name+" (deletes)"))
 	}
@@ -2496,16 +2493,16 @@ func (ds *PolicyTestSuite) TestMapState_denyPreferredInsertWithSubnets(c *check.
 		expectedKeys := newMapState(nil)
 		if tt.outcome&insertA > 0 {
 			if tt.aIsDeny {
-				expectedKeys.denies[aKey] = aEntry
+				expectedKeys.denies.Upsert(aKey, aEntry)
 			} else {
-				expectedKeys.allows[aKey] = aEntry
+				expectedKeys.allows.Upsert(aKey, aEntry)
 			}
 		}
 		if tt.outcome&insertB > 0 {
 			if tt.bIsDeny {
-				expectedKeys.denies[bKey] = bEntry
+				expectedKeys.denies.Upsert(bKey, bEntry)
 			} else {
-				expectedKeys.allows[bKey] = bEntry
+				expectedKeys.allows.Upsert(bKey, bEntry)
 			}
 		}
 		if tt.outcome&insertAWithBProto > 0 {
@@ -2514,11 +2511,11 @@ func (ds *PolicyTestSuite) TestMapState_denyPreferredInsertWithSubnets(c *check.
 			aEntryCpy.owners = map[MapStateOwner]struct{}{aKey: {}}
 			aEntry.AddDependent(aKeyWithBProto)
 			if tt.aIsDeny {
-				expectedKeys.denies[aKey] = aEntry
-				expectedKeys.denies[aKeyWithBProto] = aEntryCpy
+				expectedKeys.denies.Upsert(aKey, aEntry)
+				expectedKeys.denies.Upsert(aKeyWithBProto, aEntryCpy)
 			} else {
-				expectedKeys.allows[aKey] = aEntry
-				expectedKeys.allows[aKeyWithBProto] = aEntryCpy
+				expectedKeys.allows.Upsert(aKey, aEntry)
+				expectedKeys.allows.Upsert(aKeyWithBProto, aEntryCpy)
 			}
 		}
 		if tt.outcome&insertBWithAProto > 0 {
@@ -2527,11 +2524,11 @@ func (ds *PolicyTestSuite) TestMapState_denyPreferredInsertWithSubnets(c *check.
 			bEntryCpy.owners = map[MapStateOwner]struct{}{bKey: {}}
 			bEntry.AddDependent(bKeyWithBProto)
 			if tt.bIsDeny {
-				expectedKeys.denies[bKey] = bEntry
-				expectedKeys.denies[bKeyWithBProto] = bEntryCpy
+				expectedKeys.denies.Upsert(bKey, bEntry)
+				expectedKeys.denies.Upsert(bKeyWithBProto, bEntryCpy)
 			} else {
-				expectedKeys.allows[bKey] = bEntry
-				expectedKeys.allows[bKeyWithBProto] = bEntryCpy
+				expectedKeys.allows.Upsert(bKey, bEntry)
+				expectedKeys.allows.Upsert(bKeyWithBProto, bEntryCpy)
 			}
 		}
 		outcomeKeys := newMapState(nil)
@@ -2550,14 +2547,14 @@ func (ds *PolicyTestSuite) TestMapState_denyPreferredInsertWithSubnets(c *check.
 		bEntry := MapStateEntry{IsDeny: tt.bIsDeny}
 		expectedKeys := newMapState(nil)
 		if tt.aIsDeny {
-			expectedKeys.denies[aKey] = aEntry
+			expectedKeys.denies.Upsert(aKey, aEntry)
 		} else {
-			expectedKeys.allows[aKey] = aEntry
+			expectedKeys.allows.Upsert(aKey, aEntry)
 		}
 		if tt.bIsDeny {
-			expectedKeys.denies[bKey] = bEntry
+			expectedKeys.denies.Upsert(bKey, bEntry)
 		} else {
-			expectedKeys.allows[bKey] = bEntry
+			expectedKeys.allows.Upsert(bKey, bEntry)
 		}
 		outcomeKeys := newMapState(nil)
 		outcomeKeys.denyPreferredInsert(aKey, aEntry, selectorCache, allFeatures)
