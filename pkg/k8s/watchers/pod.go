@@ -35,6 +35,7 @@ import (
 	hubblemetrics "github.com/cilium/cilium/pkg/hubble/metrics"
 	"github.com/cilium/cilium/pkg/identity"
 	"github.com/cilium/cilium/pkg/ipcache"
+	ipcachetypes "github.com/cilium/cilium/pkg/ipcache/types"
 	"github.com/cilium/cilium/pkg/k8s"
 	"github.com/cilium/cilium/pkg/k8s/client"
 	"github.com/cilium/cilium/pkg/k8s/informer"
@@ -880,7 +881,7 @@ func (k *K8sWatcher) updatePodHostData(oldPod, newPod *slim_corev1.Pod, oldPodIP
 
 	hostKey := node.GetEndpointEncryptKeyIndex()
 
-	k8sMeta := &ipcache.K8sMetadata{
+	k8sMeta := &ipcachetypes.K8sMetadata{
 		Namespace: newPod.Namespace,
 		PodName:   newPod.Name,
 	}

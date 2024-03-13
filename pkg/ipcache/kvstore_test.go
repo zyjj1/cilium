@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cilium/cilium/pkg/identity"
+	ipcachetypes "github.com/cilium/cilium/pkg/ipcache/types"
 	"github.com/cilium/cilium/pkg/kvstore"
 	storepkg "github.com/cilium/cilium/pkg/kvstore/store"
 	"github.com/cilium/cilium/pkg/source"
@@ -27,7 +28,7 @@ func NewEvent(ev, ip string) event { return event{ev: ev, ip: ip} }
 func NewFakeIPCache() *fakeIPCache { return &fakeIPCache{events: make(chan event)} }
 func NewFakeBackend() *fakeBackend { return &fakeBackend{} }
 
-func (m *fakeIPCache) Upsert(ip string, _ net.IP, _ uint8, _ *K8sMetadata, _ Identity) (bool, error) {
+func (m *fakeIPCache) Upsert(ip string, _ net.IP, _ uint8, _ *ipcachetypes.K8sMetadata, _ Identity) (bool, error) {
 	m.events <- NewEvent("upsert", ip)
 	return true, nil
 }
