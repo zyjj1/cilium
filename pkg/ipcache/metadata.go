@@ -29,9 +29,6 @@ var (
 	// ErrLocalIdentityAllocatorUninitialized is an error that's returned when
 	// the local identity allocator is uninitialized.
 	ErrLocalIdentityAllocatorUninitialized = errors.New("local identity allocator uninitialized")
-	// ErrGlobalIdentityAllocatorUninitialized is an error that's returned when
-	// the global identity allocator is uninitialized.
-	ErrGlobalIdentityAllocatorUninitialized = errors.New("global identity allocator uninitialized")
 
 	LabelInjectorName = "ipcache-inject-labels"
 
@@ -260,7 +257,7 @@ func (ipc *IPCache) InjectLabels(ctx context.Context, modifiedPrefixes []netip.P
 
 	ipc.metadata.RLock()
 
-	for _, prefix := range modifiedPrefixes {
+	for i, prefix := range modifiedPrefixes {
 		pstr := prefix.String()
 		oldID, entryExists := ipc.LookupByIP(pstr)
 		oldTunnelIP, oldEncryptionKey := ipc.GetHostIPCache(pstr)
@@ -275,8 +272,7 @@ func (ipc *IPCache) InjectLabels(ctx context.Context, modifiedPrefixes []netip.P
 		} else {
 			// Insert to propagate the updated set of labels after removal.
 			newID, _, err = ipc.resolveIdentity(ctx, prefix, prefixInfo, prefixInfo.RequestedIdentity().ID())
-			switch {
-			case err != nil && !errors.Is(err, ErrGlobalIdentityAllocatorUninitialized):
+			if err != nil {
 				// NOTE: This may fail during a 2nd or later
 				// iteration of the loop. To handle this, break
 				// the loop here and continue executing the set
@@ -290,15 +286,13 @@ func (ipc *IPCache) InjectLabels(ctx context.Context, modifiedPrefixes []netip.P
 				log.WithError(err).WithFields(logrus.Fields{
 					logfields.IPAddr:   prefix,
 					logfields.Identity: oldID,
-					logfields.Labels:   prefixInfo.ToLabels(),
+					logfields.Labels:   newID.Labels,
 				}).Warning(
 					"Failed to allocate new identity while handling change in labels associated with a prefix.",
 				)
-				fallthrough
-			case err != nil && errors.Is(err, ErrGlobalIdentityAllocatorUninitialized):
-				remainingPrefixes = append(remainingPrefixes, prefix)
+				remainingPrefixes = modifiedPrefixes[i:]
 				err = fmt.Errorf("failed to allocate new identity during label injection: %w", err)
-				goto endLoop
+				break
 			}
 
 			// We can safely skip the ipcache upsert if the entry matches with
@@ -389,7 +383,6 @@ func (ipc *IPCache) InjectLabels(ctx context.Context, modifiedPrefixes []netip.P
 			idsToAdd[i.ID] = i.Labels.LabelArray()
 		}
 
-	endLoop: // Ensure this label always points to the end of the for-loop!
 	}
 	// Don't hold lock while calling UpdateIdentities, as it will otherwise run into a deadlock
 	ipc.metadata.RUnlock()
@@ -525,11 +518,7 @@ func (ipc *IPCache) UpdatePolicyMaps(ctx context.Context, addedIdentities, delet
 func (ipc *IPCache) resolveIdentity(ctx context.Context, prefix netip.Prefix, info PrefixInfo, restoredIdentity identity.NumericIdentity) (*identity.Identity, bool, error) {
 	// Override identities always take precedence
 	if identityOverrideLabels, ok := info.identityOverride(); ok {
-		id, n, err := ipc.allocateIdentityWithContext(ctx, identityOverrideLabels, restoredIdentity)
-		if err != nil && errors.Is(err, ctx.Err()) {
-			return nil, false, fmt.Errorf("%w: %w", ErrGlobalIdentityAllocatorUninitialized, err)
-		}
-		return id, n, err
+		return ipc.IdentityAllocator.AllocateIdentity(ctx, identityOverrideLabels, false, identity.InvalidIdentity)
 	}
 
 	lbls := info.ToLabels()
@@ -608,10 +597,7 @@ func (ipc *IPCache) resolveIdentity(ctx context.Context, prefix netip.Prefix, in
 	// This should only ever allocate an identity locally on the node,
 	// which could theoretically fail if we ever allocate a very large
 	// number of identities.
-	id, isNew, err := ipc.allocateIdentityWithContext(ctx, lbls, restoredIdentity)
-	if err != nil && errors.Is(err, ctx.Err()) {
-		return nil, false, fmt.Errorf("%w: %w", ErrGlobalIdentityAllocatorUninitialized, err)
-	}
+	id, isNew, err := ipc.IdentityAllocator.AllocateIdentity(ctx, lbls, false, restoredIdentity)
 	if lbls.Has(labels.LabelWorld[labels.IDNameWorld]) ||
 		lbls.Has(labels.LabelWorldIPv4[labels.IDNameWorldIPv4]) ||
 		lbls.Has(labels.LabelWorldIPv6[labels.IDNameWorldIPv6]) {
@@ -648,12 +634,6 @@ func (ipc *IPCache) updateReservedHostLabels(prefix netip.Prefix, lbls labels.La
 	log.WithField(logfields.Labels, newLabels).Debug("Merged labels for reserved:host identity")
 
 	return identity.AddReservedIdentityWithLabels(identity.ReservedIdentityHost, newLabels)
-}
-
-func (ipc *IPCache) allocateIdentityWithContext(ctx context.Context, lbls labels.Labels, restoredIdentity identity.NumericIdentity) (*identity.Identity, bool, error) {
-	waitCtx, waitCancel := context.WithTimeout(ctx, 1*time.Millisecond)
-	defer waitCancel()
-	return ipc.IdentityAllocator.AllocateIdentity(waitCtx, lbls, false, restoredIdentity)
 }
 
 // RemoveLabelsExcluded removes the given labels from all IPs inside the IDMD
