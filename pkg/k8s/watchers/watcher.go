@@ -25,6 +25,7 @@ import (
 	cmtypes "github.com/cilium/cilium/pkg/clustermesh/types"
 	datapath "github.com/cilium/cilium/pkg/datapath/types"
 	"github.com/cilium/cilium/pkg/endpoint"
+	"github.com/cilium/cilium/pkg/identity"
 	"github.com/cilium/cilium/pkg/ip"
 	"github.com/cilium/cilium/pkg/ipcache"
 	ipcacheTypes "github.com/cilium/cilium/pkg/ipcache/types"
@@ -174,6 +175,10 @@ type ipcacheManager interface {
 	RemoveIdentityOverride(prefix netip.Prefix, identityLabels labels.Labels, resource ipcacheTypes.ResourceID)
 }
 
+type identityManager interface {
+	LookupIdentityByID(ctx context.Context, id identity.NumericIdentity) *identity.Identity
+}
+
 type K8sWatcher struct {
 	clientset client.Clientset
 
@@ -201,6 +206,8 @@ type K8sWatcher struct {
 	cgroupManager         cgroupManager
 
 	bandwidthManager datapath.BandwidthManager
+
+	identityManager identityManager
 
 	// controllersStarted is a channel that is closed when all watchers that do not depend on
 	// local node configuration have been started
@@ -242,6 +249,7 @@ func NewK8sWatcher(
 	resources agentK8s.Resources,
 	serviceCache *k8s.ServiceCache,
 	bandwidthManager datapath.BandwidthManager,
+	identityManager identityManager,
 ) *K8sWatcher {
 	return &K8sWatcher{
 		clientset:             clientset,
@@ -262,6 +270,7 @@ func NewK8sWatcher(
 		bgpSpeakerManager:     bgpSpeakerManager,
 		cgroupManager:         cgroupManager,
 		bandwidthManager:      bandwidthManager,
+		identityManager:       identityManager,
 		cfg:                   cfg,
 		resources:             resources,
 	}
