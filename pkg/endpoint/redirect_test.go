@@ -220,6 +220,7 @@ func (s *RedirectSuite) TestAddVisibilityRedirects(c *check.C) {
 	v, ok := ep.desiredPolicy.GetPolicyMap().Get(policy.Key{
 		Identity:         0,
 		DestPort:         uint16(80),
+		PortMask:         api.FullPortMask,
 		Nexthdr:          uint8(u8proto.TCP),
 		TrafficDirection: trafficdirection.Ingress.Uint8(),
 	})
@@ -241,6 +242,7 @@ func (s *RedirectSuite) TestAddVisibilityRedirects(c *check.C) {
 	v, ok = ep.desiredPolicy.GetPolicyMap().Get(policy.Key{
 		Identity:         0,
 		DestPort:         uint16(80),
+		PortMask:         api.FullPortMask,
 		Nexthdr:          uint8(u8proto.TCP),
 		TrafficDirection: trafficdirection.Ingress.Uint8(),
 	})
@@ -265,6 +267,7 @@ func (s *RedirectSuite) TestAddVisibilityRedirects(c *check.C) {
 	v, ok = ep.desiredPolicy.GetPolicyMap().Get(policy.Key{
 		Identity:         0,
 		DestPort:         uint16(80),
+		PortMask:         api.FullPortMask,
 		Nexthdr:          uint8(u8proto.TCP),
 		TrafficDirection: trafficdirection.Ingress.Uint8(),
 	})
@@ -274,6 +277,7 @@ func (s *RedirectSuite) TestAddVisibilityRedirects(c *check.C) {
 	v, ok = ep.desiredPolicy.GetPolicyMap().Get(policy.Key{
 		Identity:         0,
 		DestPort:         uint16(80),
+		PortMask:         api.FullPortMask,
 		Nexthdr:          uint8(u8proto.TCP),
 		TrafficDirection: trafficdirection.Ingress.Uint8(),
 	})
@@ -283,6 +287,7 @@ func (s *RedirectSuite) TestAddVisibilityRedirects(c *check.C) {
 	v, ok = ep.desiredPolicy.GetPolicyMap().Get(policy.Key{
 		Identity:         0,
 		DestPort:         uint16(80),
+		PortMask:         api.FullPortMask,
 		Nexthdr:          uint8(u8proto.TCP),
 		TrafficDirection: trafficdirection.Egress.Uint8(),
 	})
@@ -367,10 +372,10 @@ var (
 
 	dirIngress      = trafficdirection.Ingress.Uint8()
 	dirEgress       = trafficdirection.Egress.Uint8()
-	mapKeyAllL7     = policy.Key{Identity: 0, DestPort: 80, Nexthdr: 6, TrafficDirection: dirIngress}
-	mapKeyFoo       = policy.Key{Identity: identityFoo, DestPort: 0, Nexthdr: 0, TrafficDirection: dirIngress}
-	mapKeyFooL7     = policy.Key{Identity: identityFoo, DestPort: 80, Nexthdr: 6, TrafficDirection: dirIngress}
-	mapKeyAllowAllE = policy.Key{Identity: 0, DestPort: 0, Nexthdr: 0, TrafficDirection: dirEgress}
+	mapKeyAllL7     = policy.Key{Identity: 0, DestPort: 80, PortMask: api.FullPortMask, Nexthdr: 6, TrafficDirection: dirIngress}
+	mapKeyFoo       = policy.Key{Identity: identityFoo, DestPort: 0, PortMask: api.FullPortMask, Nexthdr: 0, TrafficDirection: dirIngress}
+	mapKeyFooL7     = policy.Key{Identity: identityFoo, DestPort: 80, PortMask: api.FullPortMask, Nexthdr: 6, TrafficDirection: dirIngress}
+	mapKeyAllowAllE = policy.Key{Identity: 0, DestPort: 0, PortMask: api.FullPortMask, Nexthdr: 0, TrafficDirection: dirEgress}
 )
 
 // combineL4L7 returns a new PortRule that refers to the specified l4 ports and

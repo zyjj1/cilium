@@ -344,8 +344,8 @@ func (ds *PolicyTestSuite) TestMapStateWithIngressDenyWildcard(c *C) {
 		policyMapState: newMapState(map[Key]MapStateEntry{
 			// Although we have calculated deny policies, the overall policy
 			// will still allow egress to world.
-			{TrafficDirection: trafficdirection.Egress.Uint8()}: allowEgressMapStateEntry,
-			{DestPort: 80, Nexthdr: 6}:                          rule1MapStateEntry,
+			{PortMask: api.FullPortMask, TrafficDirection: trafficdirection.Egress.Uint8()}: allowEgressMapStateEntry,
+			{DestPort: 80, PortMask: api.FullPortMask, Nexthdr: 6}:                          rule1MapStateEntry,
 		}),
 	}
 
@@ -502,12 +502,12 @@ func (ds *PolicyTestSuite) TestMapStateWithIngressDeny(c *C) {
 		policyMapState: newMapState(map[Key]MapStateEntry{
 			// Although we have calculated deny policies, the overall policy
 			// will still allow egress to world.
-			{TrafficDirection: trafficdirection.Egress.Uint8()}:                              allowEgressMapStateEntry,
-			{Identity: uint32(identity.ReservedIdentityWorld), DestPort: 80, Nexthdr: 6}:     rule1MapStateEntry.WithOwners(cachedSelectorWorld),
-			{Identity: uint32(identity.ReservedIdentityWorldIPv4), DestPort: 80, Nexthdr: 6}: rule1MapStateEntry.WithOwners(cachedSelectorWorldV4, cachedSelectorWorld),
-			{Identity: uint32(identity.ReservedIdentityWorldIPv6), DestPort: 80, Nexthdr: 6}: rule1MapStateEntry.WithOwners(cachedSelectorWorldV6, cachedSelectorWorld),
-			{Identity: 192, DestPort: 80, Nexthdr: 6}:                                        rule1MapStateEntry,
-			{Identity: 194, DestPort: 80, Nexthdr: 6}:                                        rule1MapStateEntry,
+			{TrafficDirection: trafficdirection.Egress.Uint8(), PortMask: api.FullPortMask}:                              allowEgressMapStateEntry,
+			{Identity: uint32(identity.ReservedIdentityWorld), DestPort: 80, PortMask: api.FullPortMask, Nexthdr: 6}:     rule1MapStateEntry.WithOwners(cachedSelectorWorld),
+			{Identity: uint32(identity.ReservedIdentityWorldIPv4), DestPort: 80, PortMask: api.FullPortMask, Nexthdr: 6}: rule1MapStateEntry.WithOwners(cachedSelectorWorldV4, cachedSelectorWorld),
+			{Identity: uint32(identity.ReservedIdentityWorldIPv6), DestPort: 80, PortMask: api.FullPortMask, Nexthdr: 6}: rule1MapStateEntry.WithOwners(cachedSelectorWorldV6, cachedSelectorWorld),
+			{Identity: 192, DestPort: 80, PortMask: api.FullPortMask, Nexthdr: 6}:                                        rule1MapStateEntry,
+			{Identity: 194, DestPort: 80, PortMask: api.FullPortMask, Nexthdr: 6}:                                        rule1MapStateEntry,
 		}),
 	}
 
@@ -515,11 +515,11 @@ func (ds *PolicyTestSuite) TestMapStateWithIngressDeny(c *C) {
 	// maps on the policy got cleared
 
 	c.Assert(adds, checker.Equals, Keys{
-		{Identity: 192, DestPort: 80, Nexthdr: 6}: {},
-		{Identity: 194, DestPort: 80, Nexthdr: 6}: {},
+		{Identity: 192, DestPort: 80, PortMask: api.FullPortMask, Nexthdr: 6}: {},
+		{Identity: 194, DestPort: 80, PortMask: api.FullPortMask, Nexthdr: 6}: {},
 	})
 	c.Assert(deletes, checker.Equals, Keys{
-		{Identity: 193, DestPort: 80, Nexthdr: 6}: {},
+		{Identity: 193, DestPort: 80, PortMask: api.FullPortMask, Nexthdr: 6}: {},
 	})
 
 	// Have to remove circular reference before testing for Equality to avoid an infinite loop

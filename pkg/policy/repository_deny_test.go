@@ -1468,7 +1468,7 @@ Resolving ingress policy for [any:bar]
     Denies from labels {"matchLabels":{"reserved:host":""}}
     Denies from labels {"matchLabels":{"any:baz":""}}
       Found all required labels
-      Denies port [{80 }]
+      Denies port [{80 0 }]
 2/2 rules selected
 Found no allow rule
 Found deny rule
@@ -1545,7 +1545,7 @@ Resolving ingress policy for [any:bar]
     Denies from labels {"matchLabels":{"reserved:host":""},"matchExpressions":[{"key":"any:baz","operator":"In","values":[""]}]}
     Denies from labels {"matchLabels":{"any:baz":""},"matchExpressions":[{"key":"any:baz","operator":"In","values":[""]}]}
       Found all required labels
-      Denies port [{80 }]
+      Denies port [{80 0 }]
         No port match found
 * Rule {"matchLabels":{"any:bar":""}}: selected
 3/3 rules selected
