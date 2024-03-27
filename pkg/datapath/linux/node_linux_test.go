@@ -143,7 +143,7 @@ func (s *linuxPrivilegedIPv4AndIPv6TestSuite) SetUpTest(c *check.C) {
 }
 
 func tearDownTest(c *check.C) {
-	ipsec.DeleteXfrm()
+	ipsec.DeleteXFRM()
 	node.UnsetTestLocalNodeStore()
 	removeDevice(dummyHostDeviceName)
 	removeDevice(dummyExternalDeviceName)
@@ -760,6 +760,63 @@ func (s *linuxPrivilegedIPv4OnlyTestSuite) TestNodeChurnXFRMLeaks(c *check.C) {
 	c.Assert(ipv6PodSubnets, check.Not(check.IsNil))
 	config.IPv6PodSubnets = []*net.IPNet{ipv6PodSubnets}
 	s.testNodeChurnXFRMLeaksWithConfig(c, config)
+}
+
+// TestEncryptedOverlayXFRMLeaks tests that the XFRM policies and states are accurate when the encrypted overlay
+// feature is enabled and disabled.
+func (s *linuxPrivilegedIPv4OnlyTestSuite) TestEncryptedOverlayXFRMLeaks(c *check.C) {
+	keys := bytes.NewReader([]byte("6 rfc4106(gcm(aes)) 44434241343332312423222114131211f4f3f2f1 128\n"))
+	_, _, err := ipsec.LoadIPSecKeys(keys)
+	c.Assert(err, check.IsNil)
+
+	dpConfig := DatapathConfiguration{HostDevice: dummyHostDeviceName}
+	linuxNodeHandler := NewNodeHandler(dpConfig, s.nodeAddressing, nodemapfake.NewFakeNodeMapV2(), &s.mtuConfig, new(mockEnqueuer))
+	c.Assert(linuxNodeHandler, check.Not(check.IsNil))
+
+	// Cover the XFRM configuration for IPAM modes cluster-pool, kubernetes, etc.
+	config := datapath.LocalNodeConfiguration{
+		EnableIPv4:                  s.enableIPv4,
+		EnableIPv6:                  s.enableIPv6,
+		EnableIPSec:                 true,
+		EnableIPSecEncryptedOverlay: true,
+		MtuConfig:                   &s.mtuConfig,
+	}
+
+	err = linuxNodeHandler.NodeConfigurationChanged(config)
+	c.Assert(err, check.IsNil)
+
+	// Adding a node adds some XFRM states and policies.
+	node := nodeTypes.Node{
+		Name: "node",
+		IPAddresses: []nodeTypes.Address{
+			{IP: net.ParseIP("3.3.3.3"), Type: nodeaddressing.NodeInternalIP},
+			{IP: net.ParseIP("4.4.4.4"), Type: nodeaddressing.NodeCiliumInternalIP},
+		},
+		IPv4AllocCIDR: cidr.MustParseCIDR("4.4.4.0/24"),
+		BootID:        "test-boot-id",
+	}
+	err = linuxNodeHandler.NodeAdd(node)
+	c.Assert(err, check.IsNil)
+
+	states, err := netlink.XfrmStateList(netlink.FAMILY_ALL)
+	c.Assert(err, check.IsNil)
+	c.Assert(len(states), check.Equals, 4) // 4 states ( in/out for 2 ipv4, 2 overlay ipv4)
+	policies, err := netlink.XfrmPolicyList(netlink.FAMILY_ALL)
+	c.Assert(err, check.IsNil)
+	c.Assert(countXFRMPolicies(policies), check.Equals, 2) // 2 policies ( only out is counted out 1 ipv4, 1 overlay ipv4)
+
+	// disable encrypted overlay feature
+	config.EnableIPSecEncryptedOverlay = false
+
+	err = linuxNodeHandler.NodeConfigurationChanged(config)
+	c.Assert(err, check.IsNil)
+
+	states, err = netlink.XfrmStateList(netlink.FAMILY_ALL)
+	c.Assert(err, check.IsNil)
+	c.Assert(len(states), check.Equals, 2) // 2 states remaining ( in/out for 2 ipv4, 2 overlay rules removed)
+	policies, err = netlink.XfrmPolicyList(netlink.FAMILY_ALL)
+	c.Assert(err, check.IsNil)
+	c.Assert(countXFRMPolicies(policies), check.Equals, 1) // 1 policy remaining ( out 1 ipv4, 1 overlay policy removed)
 }
 
 func (s *linuxPrivilegedBaseTestSuite) testNodeChurnXFRMLeaksWithConfig(c *check.C, config datapath.LocalNodeConfiguration) {

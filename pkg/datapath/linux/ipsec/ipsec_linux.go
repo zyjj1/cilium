@@ -67,6 +67,9 @@ const (
 
 	// DefaultReqID is the default reqid used for all IPSec rules.
 	DefaultReqID = 1
+
+	// EncryptedOverlayReqID is the reqid used for encrypting overlay traffic.
+	EncryptedOverlayReqID = 2
 )
 
 type dir string
@@ -894,18 +897,34 @@ func isXfrmStateCilium(state netlink.XfrmState) bool {
 	return false
 }
 
-// DeleteXfrm remove any remaining XFRM policy or state from tables
-func DeleteXfrm() error {
+// DeleteXFRM remove any remaining XFRM policy or state from tables
+func DeleteXFRM() error {
+	return DeleteXFRMWithReqID(0)
+}
+
+// DeleteXFRMWithReqID remove any XFRM policy or state from tables which matches the reqID
+// If reqID is 0, it will remove all XFRM policy or state
+func DeleteXFRMWithReqID(reqID int) error {
 	xfrmPolicyList, err := netlink.XfrmPolicyList(netlink.FAMILY_ALL)
 	if err != nil {
 		return err
 	}
 
 	ee := resiliency.NewErrorSet("failed to delete XFRM policies", len(xfrmPolicyList))
+policy:
 	for _, p := range xfrmPolicyList {
-		if isXfrmPolicyCilium(p) {
-			if err := netlink.XfrmPolicyDel(&p); err != nil {
-				ee.Add(err)
+		if !isXfrmPolicyCilium(p) {
+			continue
+		}
+
+		// check if there exists a template with req ID as the one we are looking for
+		// if so, delete the policy.
+		for _, tmpl := range p.Tmpls {
+			if reqID == 0 || tmpl.Reqid == reqID {
+				if err := netlink.XfrmPolicyDel(&p); err != nil {
+					ee.Add(err)
+				}
+				continue policy
 			}
 		}
 	}
@@ -920,7 +939,7 @@ func DeleteXfrm() error {
 	}
 	ee = resiliency.NewErrorSet("failed to delete XFRM states", len(xfrmStateList))
 	for _, s := range xfrmStateList {
-		if isXfrmStateCilium(s) {
+		if isXfrmStateCilium(s) && (reqID == 0 || s.Reqid == reqID) {
 			if err := netlink.XfrmStateDel(&s); err != nil {
 				ee.Add(err)
 			}

@@ -45,7 +45,7 @@ func (p *IPSecSuitePrivileged) SetUpTest(c *C) {
 
 func (p *IPSecSuitePrivileged) TearDownTest(c *C) {
 	node.UnsetTestLocalNodeStore()
-	_ = DeleteXfrm()
+	_ = DeleteXFRM()
 }
 
 func (p *IPSecSuitePrivileged) TestLoadKeysNoFile(c *C) {
