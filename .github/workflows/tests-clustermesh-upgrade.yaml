@@ -55,7 +55,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  cilium_cli_ci_version:
+  cilium_cli_ci_version: 30e35115e3428582338bae052dc037fe0dded570
 
   clusterName1: cluster1
   clusterName2: cluster2
