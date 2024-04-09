@@ -440,6 +440,7 @@ jobs:
           cilium --context ${{ env.contextName1 }} connectivity test \
             --multi-cluster=${{ env.contextName2 }} --hubble=false \
             --include-conn-disrupt-test --conn-disrupt-test-setup \
+            --test-conn-disrupt-image=giorio94/test-connection-disruption:v0.0.6 \
             --conn-disrupt-dispatch-interval 0ms
 
 
@@ -570,6 +571,7 @@ jobs:
           cilium --context ${{ env.contextName1 }} connectivity test \
             --multi-cluster=${{ env.contextName2 }} --hubble=false \
             --include-conn-disrupt-test --conn-disrupt-test-setup \
+            --test-conn-disrupt-image=giorio94/test-connection-disruption:v0.0.6 \
             --conn-disrupt-dispatch-interval 0ms
 
 
@@ -637,6 +639,7 @@ jobs:
           cilium --context ${{ env.contextName1 }} connectivity test \
             --multi-cluster=${{ env.contextName2 }} --hubble=false \
             --include-conn-disrupt-test --conn-disrupt-test-setup \
+            --test-conn-disrupt-image=giorio94/test-connection-disruption:v0.0.6 \
             --conn-disrupt-dispatch-interval 0ms
 
 
