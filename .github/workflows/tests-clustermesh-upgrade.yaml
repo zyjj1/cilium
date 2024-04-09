@@ -552,9 +552,9 @@ jobs:
 
           kubectl --context ${{ env.contextName1 }} get po -n cilium-test -o wide -l kind=test-conn-disrupt
           kubectl --context ${{ env.contextName2 }} get po -n cilium-test -o wide -l kind=test-conn-disrupt
-          kubectl --context ${{ env.contextName1 }} logs -n cilium-test -l kind=test-conn-disrupt --prefix --timestamps
-          kubectl --context ${{ env.contextName2 }} logs -n cilium-test -l kind=test-conn-disrupt --prefix --timestamps
-          kubectl --context ${{ env.contextName2 }} logs -n cilium-test -l kind=test-conn-disrupt --prefix --previous --ignore-errors --timestamps
+          kubectl --context ${{ env.contextName1 }} logs -n cilium-test -l kind=test-conn-disrupt --prefix --timestamps --tail=-1
+          kubectl --context ${{ env.contextName2 }} logs -n cilium-test -l kind=test-conn-disrupt --prefix --timestamps --tail=-1
+          kubectl --context ${{ env.contextName2 }} logs -n cilium-test -l kind=test-conn-disrupt --prefix --previous --ignore-errors --timestamps --tail=-1
 
       - name: Run connectivity test - post-upgrade (${{ join(matrix.*, ', ') }})
         run: |
@@ -616,9 +616,9 @@ jobs:
 
           kubectl --context ${{ env.contextName1 }} get po -n cilium-test -o wide -l kind=test-conn-disrupt
           kubectl --context ${{ env.contextName2 }} get po -n cilium-test -o wide -l kind=test-conn-disrupt
-          kubectl --context ${{ env.contextName1 }} logs -n cilium-test -l kind=test-conn-disrupt --prefix --timestamps
-          kubectl --context ${{ env.contextName2 }} logs -n cilium-test -l kind=test-conn-disrupt --prefix --timestamps
-          kubectl --context ${{ env.contextName2 }} logs -n cilium-test -l kind=test-conn-disrupt --prefix --previous --ignore-errors --timestamps
+          kubectl --context ${{ env.contextName1 }} logs -n cilium-test -l kind=test-conn-disrupt --prefix --timestamps --tail=-1
+          kubectl --context ${{ env.contextName2 }} logs -n cilium-test -l kind=test-conn-disrupt --prefix --timestamps --tail=-1
+          kubectl --context ${{ env.contextName2 }} logs -n cilium-test -l kind=test-conn-disrupt --prefix --previous --ignore-errors --timestamps --tail=-1
 
       - name: Run connectivity test - stress-test (${{ join(matrix.*, ', ') }})
         run: |
@@ -666,9 +666,9 @@ jobs:
 
           kubectl --context ${{ env.contextName1 }} get po -n cilium-test -o wide -l kind=test-conn-disrupt
           kubectl --context ${{ env.contextName2 }} get po -n cilium-test -o wide -l kind=test-conn-disrupt
-          kubectl --context ${{ env.contextName1 }} logs -n cilium-test -l kind=test-conn-disrupt --prefix --timestamps
-          kubectl --context ${{ env.contextName2 }} logs -n cilium-test -l kind=test-conn-disrupt --prefix --timestamps
-          kubectl --context ${{ env.contextName2 }} logs -n cilium-test -l kind=test-conn-disrupt --prefix --previous --ignore-errors --timestamps
+          kubectl --context ${{ env.contextName1 }} logs -n cilium-test -l kind=test-conn-disrupt --prefix --timestamps --tail=-1
+          kubectl --context ${{ env.contextName2 }} logs -n cilium-test -l kind=test-conn-disrupt --prefix --timestamps --tail=-1
+          kubectl --context ${{ env.contextName2 }} logs -n cilium-test -l kind=test-conn-disrupt --prefix --previous --ignore-errors --timestamps --tail=-1
 
       - name: Run connectivity test - post-downgrade (${{ join(matrix.*, ', ') }})
         run: |
