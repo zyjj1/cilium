@@ -1,0 +1,37 @@
+#include <linux/sched.h>
+
+tracepoint:sched:sched_wakeup,
+tracepoint:sched:sched_wakeup_new
+{
+  if (strncmp(args.comm, "tcd-", 4) != 0) {
+    return;
+  }
+
+  @qtime[args.pid] = nsecs;
+}
+
+tracepoint:sched:sched_switch
+{
+  if (args.prev_state == TASK_RUNNING && strncmp(args.prev_comm, "tcd-", 4) == 0) {
+    @qtime[args.prev_pid] = nsecs;
+  }
+
+  if (strncmp(args.next_comm, "tcd-", 4) == 0) {
+    $ns = @qtime[args.next_pid];
+    if ($ns) {
+      $ms = (nsecs - $ns) / 1000000;
+      if ($ms > 100) {
+          printf("[%s] %s (%d) - waited for %dms\n",
+            strftime("%H:%M:%S:%f", nsecs),
+            args.next_comm, args.next_pid, $ms);
+      }
+    }
+
+    delete(@qtime[args.next_pid]);
+  }
+}
+
+END
+{
+  clear(@qtime);
+}

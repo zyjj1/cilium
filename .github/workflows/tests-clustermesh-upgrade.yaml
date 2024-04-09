@@ -426,6 +426,18 @@ jobs:
         run: |
           mkdir -p cilium-junits
 
+      - name: Install bpftrace
+        run: |
+          curl -L https://github.com/bpftrace/bpftrace/releases/download/v0.19.1/bpftrace -o bpftrace
+          install -m 755 bpftrace /usr/local/bin/bpftrace
+
+      - name: Start bpftrace in background
+        run: |
+          sudo bpftrace .github/actions/bpftrace/scripts/tcp-tracer.bt -q \
+            > ./bpftrace1.out 2> ./bpftrace1.err < /dev/null &
+          sudo bpftrace .github/actions/bpftrace/scripts/sched.bt -q \
+            > ./bpftrace2.out 2> ./bpftrace2.err < /dev/null &
+
       - name: Run connectivity test - pre-upgrade (${{ join(matrix.*, ', ') }})
         run: |
           cilium --context ${{ env.contextName1 }} connectivity test \
@@ -678,6 +690,20 @@ jobs:
             --include-conn-disrupt-test \
             --junit-file "cilium-junits/${{ env.job_name }} - post downgrade (${{ join(matrix.*, ', ') }}).xml" \
             --junit-property github_job_step="Run tests post-downgrade (${{ join(matrix.*, ', ') }})"
+
+
+      - name: Check bpftrace output
+        if: ${{ always() }}
+        run: |
+          echo "bpftrace error"
+          cat ./bpftrace1.err
+          echo "----"
+          cat ./bpftrace2.err
+
+          echo "bpftrace output"
+          cat ./bpftrace1.out
+          echo "----"
+          cat ./bpftrace2.out
 
 
       - name: Post-test information gathering

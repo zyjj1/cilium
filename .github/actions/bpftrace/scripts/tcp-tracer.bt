@@ -1,0 +1,65 @@
+// kprobe:tcp_sendmsg
+// {
+//   $sk = ((struct sock *) arg0);
+//   $inet_family = $sk->__sk_common.skc_family;
+//
+//   if (strncmp(comm, "tcd-", 4) != 0) {
+//     return;
+//   }
+//
+//   $saddr = ntop($sk->__sk_common.skc_rcv_saddr);
+//   $daddr = ntop($sk->__sk_common.skc_daddr);
+//   $lport = $sk->__sk_common.skc_num;
+//   // Destination port is big endian, it must be flipped
+//   $dport = bswap($sk->__sk_common.skc_dport);
+//
+//   printf("[%s] %s (%d) - send - %s:%d -> %s:%d\n",
+//     strftime("%H:%M:%S:%f", nsecs),
+//     comm, pid,
+//     $saddr, $lport,
+//     $daddr, $dport);
+// }
+//
+// kprobe:tcp_recvmsg
+// {
+//   $sk = ((struct sock *) arg0);
+//   $inet_family = $sk->__sk_common.skc_family;
+//
+//   if (strncmp(comm, "tcd-", 4) != 0) {
+//     return;
+//   }
+//
+//   $saddr = ntop($sk->__sk_common.skc_rcv_saddr);
+//   $daddr = ntop($sk->__sk_common.skc_daddr);
+//   $lport = $sk->__sk_common.skc_num;
+//   // Destination port is big endian, it must be flipped
+//   $dport = bswap($sk->__sk_common.skc_dport);
+//
+//   printf("[%s] %s (%d) - recv - %s:%d -> %s:%d\n",
+//     strftime("%H:%M:%S:%f", nsecs),
+//     comm, pid,
+//     $saddr, $lport,
+//     $daddr, $dport);
+// }
+
+kprobe:tcp_retransmit_skb
+{
+  $sk = (struct sock *)arg0;
+  $inet_family = $sk->__sk_common.skc_family;
+
+  $saddr = ntop($sk->__sk_common.skc_rcv_saddr);
+  $daddr = ntop($sk->__sk_common.skc_daddr);
+
+  $lport = $sk->__sk_common.skc_num;
+  // Destination port is big endian, it must be flipped
+  $dport = bswap($sk->__sk_common.skc_dport);
+
+  if ($lport != 8000 && $dport != 8000) {
+    return;
+  }
+
+  printf("[%s] retr - %s:%d -> %s:%d\n",
+    strftime("%H:%M:%S:%f", nsecs),
+    $saddr, $lport,
+    $daddr, $dport);
+}
