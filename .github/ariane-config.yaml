@@ -30,7 +30,6 @@ triggers:
     - conformance-aws-cni.yaml
   /ci-clustermesh:
     workflows:
-    - conformance-clustermesh.yaml
     - tests-clustermesh-upgrade.yaml
   /ci-e2e:
     workflows:
