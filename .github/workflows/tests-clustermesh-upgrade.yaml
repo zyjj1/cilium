@@ -257,6 +257,7 @@ jobs:
           #   down the rollout process and reduce the overall CPU load.
           CILIUM_INSTALL_DEFAULTS=" \
             --set=debug.enabled=true \
+            --set=debug.verbose=kvstore \
             --set=bpf.monitorAggregation=medium \
             --set=hubble.enabled=true \
             --set=hubble.eventBufferCapacity=65535 \
@@ -271,7 +272,9 @@ jobs:
             --set=clustermesh.useAPIServer=${{ !matrix.external-kvstore }} \
             --set=clustermesh.maxConnectedClusters=${{ matrix.max-connected-clusters }} \
             --set=clustermesh.config.enabled=true \
-            --set=extraConfig.clustermesh-ip-identities-sync-timeout=10m"
+            --set=extraConfig.clustermesh-ip-identities-sync-timeout=10m \
+            --set=hubble.export.static.enabled=true \
+          "
 
           # Run only a limited subset of tests to reduce the amount of time
           # required. The full suite is run in conformance-clustermesh.
@@ -634,6 +637,20 @@ jobs:
 
       - name: Wait for cluster mesh status to be ready
         run: |
+          exit=0
+          while [ $exit == 0 ]; do
+
+          errs=$(kubectl --context ${{ env.contextName2 }} get po -n cilium-test --no-headers | awk '$4 > 0 { print $0 }' | wc -l)
+          if [ $errs -gt 0 ]; then
+            cilium sysdump --context ${{ env.contextName1 }} --output-filename cilium-sysdump-gather-post-rollout-${{ matrix.name }}-cluster1 --profiling=false &
+            cilium sysdump --context ${{ env.contextName2 }} --output-filename cilium-sysdump-gather-post-rollout-${{ matrix.name }}-cluster2 --profiling=false &
+            wait
+            break
+          fi
+
+          sleep 0.1
+          done &
+
           cilium --context ${{ env.contextName1 }} status --wait
           cilium --context ${{ env.contextName2 }} status --wait
           cilium --context ${{ env.contextName1 }} clustermesh status --wait --wait-duration=5m
@@ -692,6 +709,20 @@ jobs:
 
       - name: Wait for cluster mesh status to be ready
         run: |
+          exit=0
+          while [ $exit == 0 ]; do
+
+          errs=$(kubectl --context ${{ env.contextName2 }} get po -n cilium-test --no-headers | awk '$4 > 0 { print $0 }' | wc -l)
+          if [ $errs -gt 0 ]; then
+            cilium sysdump --context ${{ env.contextName1 }} --output-filename cilium-sysdump-gather-post-downgrade-${{ matrix.name }}-cluster1 --profiling=false &
+            cilium sysdump --context ${{ env.contextName2 }} --output-filename cilium-sysdump-gather-post-downgrade-${{ matrix.name }}-cluster2 --profiling=false &
+            wait
+            break
+          fi
+
+          sleep 0.1
+          done &
+
           cilium --context ${{ env.contextName1 }} status --wait
           cilium --context ${{ env.contextName2 }} status --wait
           cilium --context ${{ env.contextName1 }} clustermesh status --wait --wait-duration=5m
@@ -700,6 +731,13 @@ jobs:
       - name: Gather additional troubleshooting information
         run: |
           top -b -n1 | head -n 30
+
+          for po in $(kubectl --context ${{ env.contextName1 }} get po -n kube-system -l k8s-app=cilium -o custom-columns=':.metadata.name' --no-headers); do
+            kubectl --context ${{ env.contextName1 }} cp -n kube-system $po:/var/run/cilium/hubble/ events-post-downgrade-${{ matrix.name }}-cluster1-${po}
+          done
+          for po in $(kubectl --context ${{ env.contextName2 }} get po -n kube-system -l k8s-app=cilium -o custom-columns=':.metadata.name' --no-headers); do
+            kubectl --context ${{ env.contextName2 }} cp -n kube-system $po:/var/run/cilium/hubble/ events-post-downgrade-${{ matrix.name }}-cluster2-${po}
+          done
 
           kubectl --context ${{ env.contextName1 }} get po -n cilium-test -o wide -l kind=test-conn-disrupt
           kubectl --context ${{ env.contextName2 }} get po -n cilium-test -o wide -l kind=test-conn-disrupt
@@ -762,7 +800,9 @@ jobs:
         uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
           name: cilium-sysdumps-${{ matrix.name }}
-          path: cilium-sysdump-*.zip
+          path: |
+            cilium-sysdump-*.zip
+            events-*
 
       - name: Upload JUnits [junit]
         if: ${{ always() }}
