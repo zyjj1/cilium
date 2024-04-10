@@ -127,6 +127,102 @@ jobs:
             external-kvstore: false
             max-connected-clusters: 511
 
+          - name: '5'
+            encryption: 'disabled'
+            kube-proxy: 'iptables'
+            external-kvstore: false
+            max-connected-clusters: 255
+
+          - name: '6'
+            encryption: 'disabled'
+            kube-proxy: 'iptables'
+            external-kvstore: false
+            max-connected-clusters: 255
+
+          - name: '7'
+            encryption: 'disabled'
+            kube-proxy: 'iptables'
+            external-kvstore: false
+            max-connected-clusters: 255
+
+          - name: '8'
+            encryption: 'disabled'
+            kube-proxy: 'iptables'
+            external-kvstore: false
+            max-connected-clusters: 255
+
+          - name: '9'
+            encryption: 'disabled'
+            kube-proxy: 'iptables'
+            external-kvstore: false
+            max-connected-clusters: 255
+
+          - name: '10'
+            encryption: 'disabled'
+            kube-proxy: 'iptables'
+            external-kvstore: false
+            max-connected-clusters: 255
+
+          - name: '11'
+            encryption: 'disabled'
+            kube-proxy: 'iptables'
+            external-kvstore: false
+            max-connected-clusters: 255
+
+          - name: '12'
+            encryption: 'disabled'
+            kube-proxy: 'iptables'
+            external-kvstore: false
+            max-connected-clusters: 255
+
+          - name: '13'
+            encryption: 'disabled'
+            kube-proxy: 'iptables'
+            external-kvstore: false
+            max-connected-clusters: 255
+
+          - name: '14'
+            encryption: 'disabled'
+            kube-proxy: 'iptables'
+            external-kvstore: false
+            max-connected-clusters: 255
+
+          - name: '15'
+            encryption: 'disabled'
+            kube-proxy: 'iptables'
+            external-kvstore: false
+            max-connected-clusters: 255
+
+          - name: '16'
+            encryption: 'disabled'
+            kube-proxy: 'iptables'
+            external-kvstore: false
+            max-connected-clusters: 255
+
+          - name: '17'
+            encryption: 'disabled'
+            kube-proxy: 'iptables'
+            external-kvstore: false
+            max-connected-clusters: 255
+
+          - name: '18'
+            encryption: 'disabled'
+            kube-proxy: 'iptables'
+            external-kvstore: false
+            max-connected-clusters: 255
+
+          - name: '19'
+            encryption: 'disabled'
+            kube-proxy: 'iptables'
+            external-kvstore: false
+            max-connected-clusters: 255
+
+          - name: '20'
+            encryption: 'disabled'
+            kube-proxy: 'iptables'
+            external-kvstore: false
+            max-connected-clusters: 255
+
     steps:
       - name: Checkout context ref (trusted)
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
