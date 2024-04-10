@@ -259,6 +259,7 @@ jobs:
             --set=debug.enabled=true \
             --set=bpf.monitorAggregation=medium \
             --set=hubble.enabled=true \
+            --set=hubble.eventBufferCapacity=65535 \
             --set=routingMode=tunnel \
             --set=tunnelProtocol=vxlan \
             --set=ipv4.enabled=true \
@@ -589,6 +590,7 @@ jobs:
             --multi-cluster=${{ env.contextName2 }} \
             ${{ steps.vars.outputs.connectivity_test_defaults }} \
             --include-conn-disrupt-test \
+            --sysdump-hubble-flows-count=1000000 --sysdump-hubble-flows-timeout=5m \
             --junit-file "cilium-junits/${{ env.job_name }} - post upgrade (${{ join(matrix.*, ', ') }}).xml" \
             --junit-property github_job_step="Run tests post-upgrade (${{ join(matrix.*, ', ') }})"
 
@@ -657,6 +659,7 @@ jobs:
             --test='no-interrupted-connections' \
             --test='no-unexpected-packet-drops' \
             --include-conn-disrupt-test \
+            --sysdump-hubble-flows-count=1000000 --sysdump-hubble-flows-timeout=5m \
             --junit-file "cilium-junits/${{ env.job_name }} - stress test (${{ join(matrix.*, ', ') }}).xml" \
             --junit-property github_job_step="Run tests stess-test (${{ join(matrix.*, ', ') }})"
 
@@ -710,6 +713,7 @@ jobs:
             --multi-cluster=${{ env.contextName2 }} \
             ${{ steps.vars.outputs.connectivity_test_defaults }} \
             --include-conn-disrupt-test \
+            --sysdump-hubble-flows-count=1000000 --sysdump-hubble-flows-timeout=5m \
             --junit-file "cilium-junits/${{ env.job_name }} - post downgrade (${{ join(matrix.*, ', ') }}).xml" \
             --junit-property github_job_step="Run tests post-downgrade (${{ join(matrix.*, ', ') }})"
 
