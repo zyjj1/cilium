@@ -915,7 +915,7 @@ reList:
 					goto recreateWatcher
 				}
 
-				scopedLog := scopedLog.WithField(fieldRev, r.Header.Revision)
+				scopedLog := scopedLog.WithField(fieldRev, r.Header.Revision).WithField("id", r.Header.GetClusterId())
 
 				if err := r.Err(); err != nil {
 					// We tried to watch on a compacted
@@ -925,6 +925,7 @@ reList:
 					if errors.Is(err, v3rpcErrors.ErrCompacted) {
 						scopedLog.WithError(Hint(err)).Debug("Tried watching on compacted revision")
 					}
+					scopedLog.WithError(err).Error("Etcd watch failed")
 
 					// mark all local keys in state for
 					// deletion unless the upcoming GET
@@ -986,7 +987,7 @@ func (e *etcdClient) paginatedList(ctx context.Context, log *logrus.Entry, prefi
 		log.WithFields(logrus.Fields{
 			fieldNumEntries:       len(res.Kvs),
 			fieldRemainingEntries: res.Count - int64(len(res.Kvs)),
-		}).Debug("Received list response from etcd")
+		}).WithField("id", res.Header.GetClusterId()).Debug("Received list response from etcd")
 
 		if kvs == nil {
 			kvs = make([]*mvccpb.KeyValue, 0, res.Count)
