@@ -103,6 +103,30 @@ jobs:
             encryption: "ipsec"
             hubble: "true"
 
+          - index: 9
+            name: "native-wireguard"
+            mode: "gke"
+            encryption: "wireguard"
+            hubble: "false"
+
+          - index: 10
+            name: "tunnel-wireguard"
+            mode: "tunnel"
+            encryption: "wireguard"
+            hubble: "false"
+
+          - index: 11
+            name: "native-wireguard-hubble"
+            mode: "gke"
+            encryption: "wireguard"
+            hubble: "true"
+
+          - index: 12
+            name: "tunnel-wireguard-hubble"
+            mode: "tunnel"
+            encryption: "wireguard"
+            hubble: "true"
+
     steps:
       - name: Collect Workflow Telemetry
         uses: catchpoint/workflow-telemetry-action@94c3c3d9567a0205de6da68a76c428ce4e769af1 # v2.0.0
@@ -160,6 +184,10 @@ jobs:
 
           if [ "${{ matrix.encryption }}" = "ipsec" ] ; then
             CILIUM_INSTALL_DEFAULTS+=" --helm-set=encryption.enabled=true --helm-set=encryption.type=ipsec"
+          fi
+
+          if [ "${{ matrix.encryption }}" = "wireguard" ] ; then
+            CILIUM_INSTALL_DEFAULTS+=" --helm-set=encryption.enabled=true --helm-set=encryption.type=wireguard"
           fi
 
           echo cilium_install_defaults=${CILIUM_INSTALL_DEFAULTS} >> $GITHUB_OUTPUT
