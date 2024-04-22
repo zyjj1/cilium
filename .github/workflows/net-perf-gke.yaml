@@ -5,9 +5,9 @@ on:
   schedule:
     - cron: '39 0 * * 1-5'
 # For testing uncomment following lines:
-#  push:
-#    branches:
-#      - your_branch_name
+  push:
+    branches:
+      - pr/learnitall/add-wg-throughput
 
 # By specifying the access of one of the scopes, all of those that are not
 # specified are set to 'none'.
