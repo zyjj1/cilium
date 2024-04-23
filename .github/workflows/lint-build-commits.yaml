@@ -51,11 +51,10 @@ jobs:
           go install github.com/onsi/ginkgo/ginkgo@cc0216944b25a88d3259699a029d4e601fb8a222 # v1.12.1
 
       - name: Check if build works for every commit
+        shell: bash -eu -o pipefail {0}
         run: |
-          set -eu -o pipefail
           for commit in $(git rev-list ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}) ; do
-            git checkout $commit
-            contrib/scripts/builder.sh make build -j $(nproc)
+            git checkout $commit && contrib/scripts/builder.sh make build -j $(nproc)
           done
 
       - name: Check bpf code changes
@@ -69,8 +68,8 @@ jobs:
       # Runs only if code under bpf/ is changed.
       - name: Check if datapath build works for every commit
         if: steps.bpf-tree.outputs.src == 'true'
+        shell: bash -eu -o pipefail {0}
         run: |
-          set -eu -o pipefail
           for commit in $(git rev-list ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}) ; do
             git checkout $commit
             contrib/scripts/builder.sh make -C bpf build_all -j $(nproc)
@@ -88,8 +87,8 @@ jobs:
       # Runs only if code under test/ is changed.
       - name: Check if ginkgo test suite build works for every commit
         if: steps.test-tree.outputs.src == 'true'
+        shell: bash -eu -o pipefail {0}
         run: |
-          set -eu -o pipefail
           for commit in $(git rev-list ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}) ; do
             git checkout $commit
             make -C test build -j $(nproc) && make -C test build-darwin -j $(nproc)
