@@ -31,30 +31,11 @@ jobs:
           # renovate: datasource=golang-version depName=go
           go-version: 1.22.2
 
-      - name: Set clang directory
-        id: set_clang_dir
-        run: echo "clang_dir=$HOME/.clang" >> $GITHUB_OUTPUT
-
-      - name: Install LLVM and Clang prerequisites
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libtinfo5
-
-      - name: Install LLVM and Clang
-        uses: KyleMayes/install-llvm-action@8b37482c5a2997a3ab5dbf6561f8109e2eaa7d3b # v2.0.2
-        with:
-          version: "17.0.6"
-          directory: ${{ steps.set_clang_dir.outputs.clang_dir }}
-
-      - name: Install ginkgo
-        run: |
-          go install github.com/onsi/ginkgo/ginkgo@cc0216944b25a88d3259699a029d4e601fb8a222 # v1.12.1
-
       - name: Check if build works for every commit
-        shell: bash -eu -o pipefail {0}
+        shell: bash -eu -o pipefail -o errexit {0}
         run: |
           for commit in $(git rev-list ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}) ; do
-            git checkout $commit && contrib/scripts/builder.sh make build -j $(nproc)
+            (git checkout $commit && contrib/scripts/builder.sh make build -j $(nproc)) || exit 1
           done
 
       - name: Check bpf code changes
@@ -65,14 +46,31 @@ jobs:
             src:
               - 'bpf/**'
 
+      - name: Set clang directory
+        if: steps.bpf-tree.outputs.src == 'true'
+        id: set_clang_dir
+        run: echo "clang_dir=$HOME/.clang" >> $GITHUB_OUTPUT
+
+      - name: Install LLVM and Clang prerequisites
+        if: steps.bpf-tree.outputs.src == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libtinfo5
+
+      - name: Install LLVM and Clang
+        if: steps.bpf-tree.outputs.src == 'true'
+        uses: KyleMayes/install-llvm-action@8b37482c5a2997a3ab5dbf6561f8109e2eaa7d3b # v2.0.2
+        with:
+          version: "17.0.6"
+          directory: ${{ steps.set_clang_dir.outputs.clang_dir }}
+
       # Runs only if code under bpf/ is changed.
       - name: Check if datapath build works for every commit
         if: steps.bpf-tree.outputs.src == 'true'
-        shell: bash -eu -o pipefail {0}
+        shell: bash -eu -o pipefail -o errexit {0}
         run: |
           for commit in $(git rev-list ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}) ; do
-            git checkout $commit
-            contrib/scripts/builder.sh make -C bpf build_all -j $(nproc)
+            (git checkout $commit && contrib/scripts/builder.sh make build -j $(nproc)) || exit 1
           done
 
       - name: Check test code changes
@@ -84,14 +82,18 @@ jobs:
               - 'pkg/**'
               - 'test/**'
 
+      - name: Install ginkgo
+        if: steps.test-tree.outputs.src == 'true'
+        run: |
+          go install github.com/onsi/ginkgo/ginkgo@cc0216944b25a88d3259699a029d4e601fb8a222 # v1.12.1
+
       # Runs only if code under test/ is changed.
       - name: Check if ginkgo test suite build works for every commit
         if: steps.test-tree.outputs.src == 'true'
-        shell: bash -eu -o pipefail {0}
+        shell: bash -eu -o pipefail -o errexit {0}
         run: |
           for commit in $(git rev-list ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}) ; do
-            git checkout $commit
-            make -C test build -j $(nproc) && make -C test build-darwin -j $(nproc)
+            (git checkout $commit && contrib/scripts/builder.sh make build -j $(nproc)) || exit 1
           done
 
       - name: Failed commit during the build
